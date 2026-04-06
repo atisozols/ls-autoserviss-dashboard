@@ -28,7 +28,9 @@ export default async function SettingsPage() {
     <div className="shell">
       <div className="page-header">
         <h1>Iestatījumi</h1>
-        <p className="hero-text">Noklusējuma likmes un fiksētās mēneša izmaksas</p>
+        <p className="hero-text">
+          Noklusējuma likmes un fiksētās mēneša izmaksas
+        </p>
       </div>
 
       <form action={updateSettingsAction}>
@@ -36,36 +38,30 @@ export default async function SettingsPage() {
           <section className="panel">
             <div className="panel-heading">
               <div>
-                <p className="eyebrow">Likmes</p>
-                <h2>Darba likmes</h2>
+                <p className="eyebrow">Fiksētie ienākumi</p>
+                <h2>Darba likme</h2>
               </div>
             </div>
             <p className="settings-hint">
-              Šīs likmes tiek izmantotas kā noklusējums jaunām pozīcijām. Esošās pozīcijas nezaudē savas vēsturiskās vērtības.
+              Stundas likme, ko par darbu maksā klients
             </p>
             <div className="field-grid">
               <label className="field">
-                <span>Pakalpojuma likme (EUR/h)</span>
+                <span>Darba likme (EUR/h)</span>
                 <input
                   defaultValue={Number(s.laborRate)}
                   min="0"
                   name="laborRate"
                   required
-                  step="0.01"
+                  step="1"
                   type="number"
                 />
               </label>
-              <label className="field">
-                <span>Darbinieka likme (EUR/h)</span>
-                <input
-                  defaultValue={Number(s.employeeHourlyCost)}
-                  min="0"
-                  name="employeeHourlyCost"
-                  required
-                  step="0.01"
-                  type="number"
-                />
-              </label>
+              <input
+                name="employeeHourlyCost"
+                type="hidden"
+                value={Number(s.employeeHourlyCost)}
+              />
             </div>
           </section>
 
