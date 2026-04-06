@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { LayoutClient } from "@/components/layout-client";
 import { MobileNav } from "@/components/mobile-nav";
@@ -20,12 +21,16 @@ export default function RootLayout({
     <html lang="lv">
       <body>
         <div className="app-layout">
-          <Sidebar />
+          <Suspense>
+            <Sidebar />
+          </Suspense>
           <div className="main-content">
             <LayoutClient>{children}</LayoutClient>
           </div>
         </div>
-        <MobileNav />
+        <Suspense>
+          <MobileNav />
+        </Suspense>
       </body>
     </html>
   );
