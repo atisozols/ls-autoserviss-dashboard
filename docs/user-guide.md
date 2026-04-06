@@ -13,22 +13,26 @@ Pēc veiksmīgas pieslēgšanās tiec novirzīts uz darbu sarakstu.
 
 ---
 
-## Galvenais skats — Darbu saraksts
+## Navigācija
 
-Kreisajā pusē vienmēr redzama navigācija ar diviem posteņiem: **Darbi** un **Iestatījumi**.
+Kreisajā pusē vienmēr redzama navigācija ar trim posteņiem: **Darbi**, **Darbinieki** un **Iestatījumi**.
 
-### Perioda pārslēdzējs
+### Globālais perioda pārslēdzējs
 
-Lapas augšā labajā pusē atrodas perioda pārslēdzējs ar diviem režīmiem:
+Lapas augšā labajā pusē atrodas perioda pārslēdzējs. Tas darbojas **visās lapās** — periods saglabājas, pārvietojoties starp Darbi un Darbinieki.
 
-- **Mēnesis** — rāda visus darbus izvēlētajā mēnesī
-- **Nedēļa** — rāda visus darbus izvēlētajā darba nedēļā (pirmdiena–svētdiena)
+Divi režīmi:
+
+- **Mēnesis** — rāda datus izvēlētajā mēnesī
+- **Nedēļa** — rāda datus izvēlētajā darba nedēļā (pirmdiena–svētdiena)
 
 Ar bultiņām **‹** un **›** var pārvietoties uz iepriekšējiem periodiem. Pašreizējā perioda "nākamais" bultiņa ir atspējota.
 
 Nedēļas skats darbojas pareizi arī tad, ja nedēļa šķer divu mēnešu robežu (piemēram, 28. apr. – 2. maijs).
 
-Visi rādītāji — ienākumi, izmaksas, peļņa, gaida apmaksu — attiecas uz izvēlēto periodu.
+---
+
+## Galvenais skats — Darbu saraksts
 
 ### Kopsavilkuma kartiņas
 
@@ -67,6 +71,7 @@ Atveras logs ar laukiem:
 - **Numurzīme** — auto reģistrācijas numurs (piemēram, AB1234)
 - **Klienta vārds** — neobligāts
 - **Tel. numurs** — neobligāts
+- **Darbinieks** — izvēle no saraksta (neobligāts; redzams tikai ja sistēmā ir pievienoti darbinieki)
 
 Spied **Saglabāt un atvērt** — darbs tiek izveidots un uzreiz atveras tā detalizētais skats.
 
@@ -96,9 +101,12 @@ Labajā pusē divas pogas:
 Šeit var labot darba pamata datus:
 
 - **Datums**, **Numurzīme**, **Klienta vārds**, **Tel. numurs**
+- **Darbinieks** — var mainīt vai noņemt (ja sistēmā ir pievienoti darbinieki)
 - **Piezīmes** — brīvs teksts par darbu
 
 Pēc izmaiņām spied **Saglabāt galveni**.
+
+> Maiņot darbinieku, tas ietekmē tikai **jaunas** pozīcijas — esošās pozīcijas saglabā savas vēsturiskās likmes.
 
 ### Maksājumu statuss
 
@@ -111,13 +119,11 @@ Rāda cik daudz no darba summas ir apmaksāts:
 - Ievadi saņemto summu laukā un spied **Saglabāt**, vai
 - Spied **Apmaksāts ✓**, ja samaksāts pilnā apmērā
 
-Kad darbs pilnībā apmaksāts, parādās zaļa atzīme. Var atcelt ar saiti **Atcelt**.
-
 ---
 
 ## Darba pozīcijas
 
-Darba apakšdaļā atrodas tabula ar visām pozīcijām — katras rinda ir viena detaļa vai viena darba vienība.
+Darba apakšdaļā atrodas tabula ar visām pozīcijām — katra rinda ir viena detaļa vai viena darba vienība.
 
 ### Jauna pozīcija
 
@@ -129,13 +135,24 @@ Aizpildi laukus:
 |---|---|
 | **Detaļa / darbs** | Nosaukums, piemēram, "Bremžu kluči priekšā" |
 | **Kods** | Detaļas kods vai artikuls (neobligāts) |
-| **Daudz.** | Daudzums. Bultiņas pārvieto par 1; var ievadīt arī decimālu |
+| **Daudz.** | Daudzums |
 | **Iepirkums** | Iepirkuma cena par vienību (EUR) |
 | **Pārdošana** | Pārdošanas cena klientam par vienību (EUR) |
 | **Stundas** | Nostrādātās stundas šai pozīcijai |
 | **Piezīmes** | Brīvs teksts (neobligāts) |
 
 Spied **Enter** vai **✓** pogu, lai pievienotu rindu.
+
+### Aprēķinātās kolonnas
+
+Katras rindas labajā pusē automātiski tiek rādīts:
+
+| Kolonna | Ko rāda |
+|---|---|
+| **Darbinieks** | Darbinieka algas izmaksas šai pozīcijai |
+| **Izmaksas** | Kopējās izmaksas (detaļas iepirkums + darbinieks) |
+| **Ienākumi** | Kopējie ienākumi (detaļas pārdošana + darba cena) |
+| **Peļņa** | Ienākumi mīnus izmaksas (zaļš/sarkans) |
 
 ### Esošo pozīciju labošana
 
@@ -148,9 +165,37 @@ Mazais punkts rindas beigās rāda saglabāšanas statusu:
 
 Lai dzēstu rindu, spied **×** pogu labajā malā.
 
-### Peļņa katrā rindā
+---
 
-Katras rindas beigās redzama šīs pozīcijas **peļņa** — zaļā krāsā ja pozitīva, sarkanā ja negatīva.
+## Darbinieku lapa
+
+Navigācijā spied **Darbinieki**.
+
+### Perioda statistika
+
+Lapas augšā redzamas divas kopsavilkuma kartiņas par **izvēlēto periodu**:
+
+- **Kopējās stundas** — visu darbinieku nostrādātās stundas
+- **Kopējās algas izmaksas** — visu darbinieku algas
+
+Tabula rāda katru darbinieku ar viņa stundām un algas izmaksām izvēlētajā periodā.
+
+> Periods (mēnesis vai nedēļa) ir tas pats, kas Darbu lapā — mainot periodu, tas mainās abās lapās vienlaikus.
+
+### Darbinieku pārvaldība
+
+Zemāk atrodas darbinieku saraksts ar iespēju:
+
+- **Labot** — mainīt darbinieka vārdu vai stundas likmi (inline)
+- **Dzēst** — noņemt darbinieku (darbi saglabājas, bet darbinieka saite tiek noņemta)
+
+### Jauna darbinieka pievienošana
+
+Saraksta apakšā atrodas forma:
+
+- Ievadi **vārdu**
+- Norādi **stundas likmi** (EUR/h), noklusēti 8 €
+- Spied **Pievienot +**
 
 ---
 
@@ -174,7 +219,7 @@ Navigācijā spied **Iestatījumi**.
 ### Darba likmes
 
 - **Pakalpojuma likme** — stundas cena klientam (EUR/h), noklusēti 35 €
-- **Darbinieka likme** — darbinieka izmaksu likme stundā (EUR/h), noklusēti 8 €
+- **Darbinieka likme** — noklusētā darbinieka izmaksu likme (EUR/h), noklusēti 8 €; tiek izmantota ja darbam nav piesaistīts konkrēts darbinieks
 
 Šīs likmes tiek izmantotas kā noklusējums **jaunām** pozīcijām. Esošās pozīcijas saglabā savas vēsturiskās vērtības.
 
@@ -188,7 +233,7 @@ Ievadi aptuvenos mēneša izdevumus:
 - Uzkopšana
 - Apģērbs
 
-Šīs izmaksas tiek automātiski sadalītas pa darba dienām un iekļautas perioda kopsavilkumā. Aprēķinā tiek ņemtas vērā tikai darba dienas no perioda sākuma līdz šodienai ieskaitot — nevis visas mēneša dienas. Tādēļ perioda sākumā fiksētās izmaksas ir mazas un pieaug ar katru dienu.
+Šīs izmaksas tiek automātiski sadalītas pa darba dienām un iekļautas perioda kopsavilkumā. Aprēķinā tiek ņemtas vērā tikai darba dienas no perioda sākuma līdz šodienai ieskaitot.
 
 Spied **Saglabāt iestatījumus**, lai saglabātu izmaiņas.
 

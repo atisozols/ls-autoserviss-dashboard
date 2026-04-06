@@ -35,11 +35,14 @@ function getWeekBounds(weekStart: string): { startDate: Date; endDate: Date } {
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
 
-  const mode: "monthly" | "weekly" = params.mode === "weekly" ? "weekly" : "monthly";
+  const mode: "monthly" | "weekly" =
+    params.mode === "weekly" ? "weekly" : "monthly";
 
   // Today at UTC midnight for fixed-cost cutoff
   const now = new Date();
-  const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const todayUTC = new Date(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
+  );
 
   let startDate: Date;
   let endDate: Date;
@@ -61,13 +64,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     endDate = new Date(Date.UTC(year, mon, 1));
   }
 
-  const [jobs, settings] = await Promise.all([
+  const [jobs, settings, workers] = await Promise.all([
     prisma.job.findMany({
       where: { date: { gte: startDate, lt: endDate } },
       include: { items: { orderBy: { rowOrder: "asc" } } },
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     }),
     prisma.settings.findUnique({ where: { id: 1 } }),
+    prisma.worker.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
   ]);
 
   const totalMonthlyFixed = settings
@@ -78,25 +85,35 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       Number(settings.clothingCost)
     : 0;
 
-  const { effectiveCost: periodFixedCost, businessDaysElapsed } = calculatePeriodFixedCosts(
-    totalMonthlyFixed,
-    startDate,
-    endDate,
-    todayUTC,
-  );
+  const { effectiveCost: periodFixedCost, businessDaysElapsed } =
+    calculatePeriodFixedCosts(totalMonthlyFixed, startDate, endDate, todayUTC);
 
   const jobsWithTotals = jobs.map((job) => {
     const totals = calculateJobTotals(job);
     const amountPaid = Number(job.amountPaid ?? 0);
-    const awaitingPayment = Math.max(0, Math.round((totals.totalRevenue - amountPaid) * 100) / 100);
+    const awaitingPayment = Math.max(
+      0,
+      Math.round((totals.totalRevenue - amountPaid) * 100) / 100,
+    );
     return { ...job, totals, amountPaid, awaitingPayment };
   });
 
-  const periodRevenue = jobsWithTotals.reduce((s, j) => s + j.totals.totalRevenue, 0);
-  const periodJobCosts = jobsWithTotals.reduce((s, j) => s + j.totals.totalCost, 0);
-  const periodTotalCost = Math.round((periodJobCosts + periodFixedCost) * 100) / 100;
-  const periodProfit = Math.round((periodRevenue - periodTotalCost) * 100) / 100;
-  const periodAwaiting = jobsWithTotals.reduce((s, j) => s + j.awaitingPayment, 0);
+  const periodRevenue = jobsWithTotals.reduce(
+    (s, j) => s + j.totals.totalRevenue,
+    0,
+  );
+  const periodJobCosts = jobsWithTotals.reduce(
+    (s, j) => s + j.totals.totalCost,
+    0,
+  );
+  const periodTotalCost =
+    Math.round((periodJobCosts + periodFixedCost) * 100) / 100;
+  const periodProfit =
+    Math.round((periodRevenue - periodTotalCost) * 100) / 100;
+  const periodAwaiting = jobsWithTotals.reduce(
+    (s, j) => s + j.awaitingPayment,
+    0,
+  );
 
   const jobRows = jobsWithTotals.map((j) => ({
     id: j.id,
@@ -109,7 +126,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     totalRevenue: formatCurrency(j.totals.totalRevenue),
     profit: formatCurrency(j.totals.profit),
     profitGood: j.totals.profit >= 0,
-    awaitingPayment: j.awaitingPayment > 0 ? formatCurrency(j.awaitingPayment) : null,
+    awaitingPayment:
+      j.awaitingPayment > 0 ? formatCurrency(j.awaitingPayment) : null,
   }));
 
   return (
@@ -118,7 +136,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <h1>Darbi</h1>
         <div className="page-header-right">
           <PeriodSwitcher mode={mode} value={periodValue} />
-          <NewJobModal defaultDate={toInputDate(new Date())} />
+          <NewJobModal
+            defaultDate={toInputDate(new Date())}
+            workers={workers}
+          />
         </div>
       </div>
 
@@ -132,15 +153,20 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <strong>{formatCurrency(periodTotalCost)}</strong>
           {periodFixedCost > 0 && (
             <small className="metric-note">
-              t.sk. {formatCurrency(periodFixedCost)} fiksētās ({businessDaysElapsed} d.)
+              t.sk. {formatCurrency(periodFixedCost)} fiksētās (
+              {businessDaysElapsed} d.)
             </small>
           )}
         </article>
-        <article className={`metric-card ${periodProfit >= 0 ? "profit-good" : "profit-bad"}`}>
+        <article
+          className={`metric-card ${periodProfit >= 0 ? "profit-good" : "profit-bad"}`}
+        >
           <span>Peļņa</span>
           <strong>{formatCurrency(periodProfit)}</strong>
         </article>
-        <article className={`metric-card ${periodAwaiting > 0 ? "awaiting-highlight" : "profit-good"}`}>
+        <article
+          className={`metric-card ${periodAwaiting > 0 ? "awaiting-highlight" : "profit-good"}`}
+        >
           <span>Gaida apmaksu</span>
           <strong>{formatCurrency(periodAwaiting)}</strong>
         </article>
@@ -148,8 +174,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       {totalMonthlyFixed > 0 && (
         <p className="overhead-note">
-          Fiksētās izmaksas {formatCurrency(totalMonthlyFixed)}/mēn · uzkrāts par {businessDaysElapsed} darba dienām ·{" "}
-          {formatCurrency(periodFixedCost)} šajā periodā
+          Fiksētās izmaksas {formatCurrency(totalMonthlyFixed)}/mēn ·
+          līdzšinējās izmaksas par {businessDaysElapsed} darba dienām -{" "}
+          {formatCurrency(periodFixedCost)}
         </p>
       )}
 

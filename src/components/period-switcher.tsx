@@ -1,12 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { getCurrentMonthStr, getCurrentWeekStart } from "@/lib/calculations";
 
 type Props = {
   mode: "monthly" | "weekly";
-  value: string; // "YYYY-MM" for monthly, "YYYY-MM-DD" for weekly (Monday)
+  value: string; // "YYYY-MM" for monthly, "YYYY-MM-DD" (Monday) for weekly
 };
 
 function addWeeks(weekStart: string, delta: number): string {
@@ -25,25 +25,27 @@ function formatWeekLabel(weekStart: string): string {
   const fmt = (date: Date) =>
     date.toLocaleDateString("lv-LV", { day: "numeric", month: "short", timeZone: "UTC" });
 
-  // If same month: "2. – 6. maijs 2025"
   if (monday.getUTCMonth() === friday.getUTCMonth()) {
     const dayFmt = new Intl.DateTimeFormat("lv-LV", { day: "numeric", timeZone: "UTC" });
-    const monthYear = friday.toLocaleDateString("lv-LV", { month: "long", year: "numeric", timeZone: "UTC" });
     return `${dayFmt.format(monday)}. – ${fmt(friday)} ${monday.getUTCFullYear()}`;
   }
 
-  // Cross-month: "28. apr – 2. maijs 2025"
   return `${fmt(monday)} – ${fmt(friday)} ${friday.getUTCFullYear()}`;
 }
 
 export function PeriodSwitcher({ mode, value }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+
+  function nav(params: string) {
+    router.push(`${pathname}?${params}`);
+  }
 
   function switchMode(newMode: "monthly" | "weekly") {
     if (newMode === "monthly") {
-      router.push(`/?mode=monthly&month=${getCurrentMonthStr()}`);
+      nav(`mode=monthly&month=${getCurrentMonthStr()}`);
     } else {
-      router.push(`/?mode=weekly&week=${getCurrentWeekStart()}`);
+      nav(`mode=weekly&week=${getCurrentWeekStart()}`);
     }
   }
 
@@ -51,17 +53,16 @@ export function PeriodSwitcher({ mode, value }: Props) {
     const [year, mon] = value.split("-").map(Number);
     const d = new Date(year, mon - 1 + delta, 1);
     const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    router.push(`/?mode=monthly&month=${next}`);
+    nav(`mode=monthly&month=${next}`);
   }
 
   function goWeek(delta: number) {
-    const next = addWeeks(value, delta);
-    router.push(`/?mode=weekly&week=${next}`);
+    nav(`mode=weekly&week=${addWeeks(value, delta)}`);
   }
 
-  const isCurrentMonth = mode === "monthly" && value === getCurrentMonthStr();
-  const isCurrentWeek = mode === "weekly" && value === getCurrentWeekStart();
-  const isAtLimit = isCurrentMonth || isCurrentWeek;
+  const isAtLimit =
+    (mode === "monthly" && value === getCurrentMonthStr()) ||
+    (mode === "weekly" && value === getCurrentWeekStart());
 
   const monthLabel =
     mode === "monthly"

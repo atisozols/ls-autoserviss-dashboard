@@ -27,18 +27,24 @@ const defaultSettings = { laborRate: 35, employeeHourlyCost: 8 };
 export default async function JobDetailPage({ params }: JobPageProps) {
   const { id } = await params;
 
-  const [job, settings] = await Promise.all([
+  const [job, settings, workers] = await Promise.all([
     prisma.job.findUnique({
       where: { id },
       include: { items: { orderBy: { rowOrder: "asc" } } },
     }),
     prisma.settings.findUnique({ where: { id: 1 } }),
+    prisma.worker.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, hourlyRate: true } }),
   ]);
 
   if (!job) notFound();
 
   const totals = calculateJobTotals(job);
   const s = settings ?? defaultSettings;
+  // If a worker is assigned, their hourlyRate overrides the global default for new items
+  const workerForJob = job.workerId ? workers.find((w) => w.id === job.workerId) : null;
+  const defaultEmployeeHourlyCost = workerForJob
+    ? Number(workerForJob.hourlyRate)
+    : Number(s.employeeHourlyCost);
   const amountPaid = Number(job.amountPaid ?? 0);
   const awaitingPayment = Math.max(0, Math.round((totals.totalRevenue - amountPaid) * 100) / 100);
 
@@ -213,6 +219,20 @@ export default async function JobDetailPage({ params }: JobPageProps) {
               <input defaultValue={job.clientPhone ?? ""} name="clientPhone" type="tel" />
             </label>
 
+            {workers.length > 0 && (
+              <label className="field field-full">
+                <span>Darbinieks</span>
+                <select defaultValue={job.workerId ?? ""} name="workerId">
+                  <option value="">— nav norādīts —</option>
+                  {workers.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
             <label className="field field-full">
               <span>Piezīmes</span>
               <textarea defaultValue={job.notes ?? ""} name="notes" rows={3} />
@@ -251,7 +271,7 @@ export default async function JobDetailPage({ params }: JobPageProps) {
         </div>
 
         <JobItemsTable
-          defaultEmployeeHourlyCost={Number(s.employeeHourlyCost)}
+          defaultEmployeeHourlyCost={defaultEmployeeHourlyCost}
           defaultLaborRate={Number(s.laborRate)}
           initialItems={serializedItems}
           jobId={job.id}

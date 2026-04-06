@@ -193,6 +193,9 @@ function ItemRow({
           value={values.notes}
         />
       </td>
+      <td className="col-computed">{formatCurrency(calc.employeeCost)}</td>
+      <td className="col-computed">{formatCurrency(calc.lineCost)}</td>
+      <td className="col-computed">{formatCurrency(calc.lineRevenue)}</td>
       <td className={`col-profit ${calc.lineProfit >= 0 ? "profit-good" : "profit-bad"}`}>
         {formatCurrency(calc.lineProfit)}
       </td>
@@ -370,6 +373,9 @@ function NewItemRow({
           value={values.notes}
         />
       </td>
+      <td className="col-computed">{formatCurrency(calc.employeeCost)}</td>
+      <td className="col-computed">{formatCurrency(calc.lineCost)}</td>
+      <td className="col-computed">{formatCurrency(calc.lineRevenue)}</td>
       <td className={`col-profit ${calc.lineProfit >= 0 ? "profit-good" : "profit-bad"}`}>
         {formatCurrency(calc.lineProfit)}
       </td>
@@ -425,6 +431,9 @@ export function JobItemsTable({
             <th className="col-price">Pārdošana</th>
             <th className="col-hours">Stundas</th>
             <th className="col-notes">Piezīmes</th>
+            <th className="col-computed">Darbinieks</th>
+            <th className="col-computed">Izmaksas</th>
+            <th className="col-computed">Ienākumi</th>
             <th className="col-profit">Peļņa</th>
             <th className="col-status" />
             <th className="col-del" />

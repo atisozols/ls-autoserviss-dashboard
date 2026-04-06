@@ -32,8 +32,8 @@ Tas nozīmē:
 - vienas lapas web aplikācija
 - desktop-first, bet lietojama arī planšetē
 - vienkāršs un ātrs interfeiss ikdienas lietošanai servisā
-- kreisā puse: vienmēr redzama navigācijas josla ar diviem posteņiem: Darbi un Iestatījumi
-- galvenais saturs: darbu saraksts vai iestatījumu forma
+- kreisā puse: vienmēr redzama navigācijas josla ar trim posteņiem: Darbi, Darbinieki un Iestatījumi
+- galvenais saturs: darbu saraksts, darbinieku pārskats vai iestatījumu forma
 
 ## 4. Galvenie lietošanas scenāriji
 
@@ -59,6 +59,7 @@ Atveras modālais logs ar šādiem laukiem:
 - `plateNumber`, ar placeholder formātu `AB1234`
 - `clientName`
 - `clientPhone`
+- `workerId` — darbinieka izvēle (dropdown, neobligāts; redzams tikai ja ir pievienoti darbinieki)
 
 ### 4.3. Pāreja uz darba detalizēto skatu
 
@@ -78,27 +79,29 @@ Dizaina principi:
 
 ### 4.5. Esoša darba apskate un labošana
 
-Lietotājs var atvērt saglabātu darbu, labot darba galveni un pievienot, dzēst vai labot tā pozīcijas.
+Lietotājs var atvērt saglabātu darbu, labot darba galveni (ieskaitot darbinieka maiņu) un pievienot, dzēst vai labot tā pozīcijas.
 
 ### 4.6. Peļņas pārbaude konkrētam darbam
 
 Lietotājs redz:
 
 - darba kopējos ieņēmumus
-- darba kopējās izmaksas
+- darba kopējās izmaksas (ieskaitot aprēķināto daļu no fiksētajām izmaksām)
 - darba kopējo peļņu
-- katras pozīcijas individuālo peļņu
+- katras pozīcijas individuālo peļņu, izmaksas, ienākumus un darbinieka algas izmaksas
 
 ### 4.7. Darbu pārskatīšana laika periodā
 
 Lietotājs var pārskatīt darbus divos režīmos:
 
 - **Mēneša skats** — visi darbi izvēlētajā mēnesī
-- **Nedēļas skats** — visi darbi tekošās ISO darba nedēļas laikā (pirmdiena–svētdiena)
+- **Nedēļas skats** — visi darbi izvēlētajā ISO darba nedēļā (pirmdiena–svētdiena)
 
 Nedēļas skats darbojas pareizi arī tad, ja nedēļa šķer divu mēnešu robežu.
 
 Starp režīmiem var pārslēgties ar pogu `Mēnesis / Nedēļa` blakus perioda navigācijai.
+
+**Periods ir globāls** — pārslēgšana starp Darbi un Darbinieki lapām saglabā izvēlēto periodu.
 
 ### 4.8. Meklēšana
 
@@ -131,7 +134,7 @@ Navigācijā pieejama "Iestatījumi" sadaļa.
 
 Iestatījumos lietotājs var norādīt:
 
-- darbinieka stundas likme (EUR/h), noklusēti `8 EUR/h`
+- noklusētā darbinieka stundas likme (EUR/h), noklusēti `8 EUR/h`
 - pakalpojuma stundas likme (EUR/h), noklusēti `35 EUR/h`
 - aptuvenie mēneša fiksētie izdevumi (katrs atsevišķi):
   - elektroenerģija (EUR/mēnesī)
@@ -140,7 +143,18 @@ Iestatījumos lietotājs var norādīt:
   - uzkopšana (EUR/mēnesī)
   - apģērbs (EUR/mēnesī)
 
-Šie dati tiek saglabāti datubāzē.
+### 4.11. Darbinieku pārvaldība
+
+Navigācijā pieejama "Darbinieki" sadaļa.
+
+Darbinieku lapā lietotājs var:
+
+- apskatīt visus darbiniekus
+- pievienot jaunus darbiniekus (vārds, stundas likme)
+- labot esošo darbinieku datus
+- dzēst darbiniekus (darbi saglabājas, bet darbinieka saite tiek noņemta)
+
+Lapā redzami arī katra darbinieka **stundas un algas izmaksas izvēlētajā periodā** (mēnesī vai nedēļā).
 
 ## 5. Datu modelis
 
@@ -153,6 +167,7 @@ Viens `darbs` satur:
 - darba datumu
 - auto identifikāciju
 - klienta informāciju
+- piesaistīto darbinieku (neobligāti)
 - darba līmeņa piezīmes vai papildus izdevumus
 - vairākas `darba pozīcijas`
 
@@ -173,7 +188,7 @@ Viena rinda datubāzē — globālie servisa iestatījumi.
 | --- | --- | --- | --- |
 | `id` | integer | jā | vienmēr `1` |
 | `laborRate` | decimal | jā | pakalpojuma stundas likme, noklusēti `35` |
-| `employeeHourlyCost` | decimal | jā | darbinieka stundas likme, noklusēti `8` |
+| `employeeHourlyCost` | decimal | jā | noklusētā darbinieka stundas likme, noklusēti `8` |
 | `electricityCost` | decimal | jā | elektroenerģija EUR/mēnesī, noklusēti `0` |
 | `rentCost` | decimal | jā | īre EUR/mēnesī, noklusēti `0` |
 | `heatCost` | decimal | jā | siltums EUR/mēnesī, noklusēti `0` |
@@ -181,80 +196,77 @@ Viena rinda datubāzē — globālie servisa iestatījumi.
 | `clothingCost` | decimal | jā | apģērbs EUR/mēnesī, noklusēti `0` |
 | `updatedAt` | datetime | jā | pēdējo izmaiņu laiks |
 
-### 5.4. Entīte: Darbs
+### 5.4. Entīte: Worker (Darbinieks)
+
+| Lauks | Tips | Obligāts | Apraksts |
+| --- | --- | --- | --- |
+| `id` | cuid | jā | unikāls identifikators |
+| `name` | string | jā | darbinieka vārds |
+| `hourlyRate` | decimal | jā | stundas izmaksu likme, noklusēti `8` |
+| `createdAt` | datetime | jā | izveides laiks |
+| `updatedAt` | datetime | jā | pēdējo izmaiņu laiks |
+
+### 5.5. Entīte: Darbs
 
 Katrs `darbs` reprezentē vienu klienta servisa apmeklējumu vai vienu pabeigtu darbu.
 
 | Lauks | Tips | Obligāts | Apraksts |
 | --- | --- | --- | --- |
-| `id` | UUID / integer | jā | unikāls darba identifikators |
+| `id` | cuid | jā | unikāls darba identifikators |
 | `date` | date | jā | darba datums |
 | `plateNumber` | string | jā | auto numurzīme |
 | `clientName` | string | nē | klienta vārds |
 | `clientPhone` | string | nē | klienta tālruņa numurs |
 | `vehicleNote` | string | nē | brīvs auto apraksts, piemēram, marka/modelis |
-| `additionalExpenses` | decimal | nē | darba līmeņa papildus izdevumi, kas nav piesaistīti vienai pozīcijai |
+| `workerId` | reference | nē | saite uz `Worker`; ja norādīts — darbinieks tiek izmantots kā noklusējums jaunajām pozīcijām |
+| `additionalExpenses` | decimal | nē | darba līmeņa papildus izdevumi |
 | `notes` | text | nē | piezīmes par darbu |
 | `createdAt` | datetime | jā | izveides laiks |
 | `updatedAt` | datetime | jā | pēdējo izmaiņu laiks |
 
-### 5.5. Entīte: Darba pozīcija
+### 5.6. Entīte: Darba pozīcija
 
 Katra `darba pozīcija` ir viena rinda konkrētā darbā.
 
 | Lauks | Tips | Obligāts | Apraksts |
 | --- | --- | --- | --- |
-| `id` | UUID / integer | jā | unikāls pozīcijas identifikators |
+| `id` | cuid | jā | unikāls pozīcijas identifikators |
 | `jobId` | reference | jā | saite uz `darbs` |
 | `rowOrder` | integer | jā | rindas secība darbā |
 | `partName` | string | jā | detaļas vai pozīcijas nosaukums |
 | `partCode` | string | nē | detaļas kods / artikuls |
-| `quantity` | decimal | jā | daudzums, piemēram, `1`, `2` vai `4.5` |
+| `quantity` | decimal | jā | daudzums |
 | `partPurchasePrice` | decimal | jā | iepirkuma cena par vienību |
 | `partSalePrice` | decimal | jā | pārdošanas cena klientam par vienību |
 | `laborHours` | decimal | jā | nostrādātās stundas šai pozīcijai |
-| `laborRate` | decimal | jā | darba ieņēmumu likme stundā (no iestatījumiem brīdī, kad pievienota) |
-| `employeeHourlyCost` | decimal | jā | darbinieka izmaksu likme stundā (no iestatījumiem brīdī, kad pievienota) |
+| `laborRate` | decimal | jā | darba ieņēmumu likme stundā (fiksēta brīdī, kad pievienota) |
+| `employeeHourlyCost` | decimal | jā | darbinieka izmaksu likme stundā (fiksēta brīdī, kad pievienota; noklusējums — darbinieka likme vai globālais iestatījums) |
 | `notes` | text | nē | piezīmes par konkrēto pozīciju |
 
-### 5.6. Atvasinātie lauki
-
-Šie lauki netiek ievadīti manuāli, bet tiek aprēķināti sistēmā:
+### 5.7. Atvasinātie lauki
 
 #### Pozīcijas līmenī
 
-- `partPurchaseTotal`
-- `partSaleTotal`
-- `laborRevenue`
-- `employeeCost`
-- `lineRevenue`
-- `lineCost`
-- `lineProfit`
+- `partPurchaseTotal = quantity × partPurchasePrice`
+- `partSaleTotal = quantity × partSalePrice`
+- `laborRevenue = laborHours × laborRate`
+- `employeeCost = laborHours × employeeHourlyCost`
+- `lineRevenue = partSaleTotal + laborRevenue`
+- `lineCost = partPurchaseTotal + employeeCost`
+- `lineProfit = lineRevenue − lineCost`
 
 #### Darba līmenī
 
-- `totalRevenue`
-- `totalCost`
-- `profit`
-- `positionCount`
+- `totalRevenue` — visu pozīciju `lineRevenue` summa
+- `totalCost` — visu pozīciju `lineCost` summa + `additionalExpenses`
+- `profit = totalRevenue − totalCost`
+- `positionCount` — pozīciju skaits
 
 ## 6. Aprēķinu loģika
 
 ### 6.1. Pozīcijas aprēķini
 
-`partPurchaseTotal = quantity * partPurchasePrice`
-
-`partSaleTotal = quantity * partSalePrice`
-
-`laborRevenue = laborHours * laborRate`
-
-`employeeCost = laborHours * employeeHourlyCost`
-
-`lineRevenue = partSaleTotal + laborRevenue`
-
-`lineCost = partPurchaseTotal + employeeCost`
-
-`lineProfit = lineRevenue - lineCost`
+Skatīt 5.7. sadaļu.
 
 ### 6.2. Darba aprēķini
 
@@ -273,6 +285,17 @@ Piemēram, ja mēneša fiksētās izmaksas ir 600 EUR un mēnesī ir 20 darba di
 Tas novērš situāciju, kad peļņa izskatās negatīva tikai tāpēc, ka mēnesis vai nedēļa vēl nav beigusies.
 
 Pagājušajiem periodiem (kur visi dati ir zināmi) tiek iekļautas visas perioda darba dienas.
+
+### 6.4. Darbinieka stundas un algas periodā
+
+Darbinieka perioda statistika aprēķināta no visiem darbiem, kuros norādīts šis darbinieks un kuru datums iekrīt izvēlētajā periodā:
+
+- `periodHours = summa(laborHours)` no visiem šo darbu `JobItem`
+- `periodPay = summa(laborHours × employeeHourlyCost)` no visiem šo darbu `JobItem`
+
+### 6.5. Noklusētā darbinieka likme jaunām pozīcijām
+
+Ja darbam piesaistīts darbinieks, jaunām pozīcijām kā `employeeHourlyCost` noklusējums tiek izmantota darbinieka `hourlyRate`. Ja darbinieks nav norādīts — tiek izmantots globālais `Settings.employeeHourlyCost`.
 
 ## 7. Funkcionālās prasības
 
@@ -294,10 +317,11 @@ Sistēmai jāattēlo visi darbi tabulas veidā ar kolonnām:
 - kopējie ieņēmumi
 - kopējās izmaksas
 - peļņa
+- apmaksas statuss
 
 ### 7.3. Jauna darba pievienošana
 
-Jaunu darbu pievieno ar pogu `Jauns darbs +`.
+Jaunu darbu pievieno ar pogu `Jauns darbs +`. Modālajā logā pieejams arī darbinieka izvēles lauks (ja sistēmā ir reģistrēti darbinieki).
 
 ### 7.4. Darba pozīciju pārvaldība — kompakts režīms
 
@@ -312,32 +336,53 @@ Katrai rindai jābūt ievades laukiem:
 - `partSalePrice` (šaurs)
 - `laborHours` (šaurs)
 - `notes` (vidēji plats)
-- `lineProfit` (rādīts kā aprēķinātā vērtība)
-- Dzēšanas poga
 
-Jauna rinda tiek pievienota automātiski ar pogu vai Enter.
+Un aprēķinātajām kolonnām (tikai lasāmas):
 
-### 7.5. Pozīcijas aprēķinu attēlošana
+- `employeeCost` — darbinieka algas izmaksas šai pozīcijai
+- `lineCost` — kopējās izmaksas šai pozīcijai
+- `lineRevenue` — kopējie ienākumi šai pozīcijai
+- `lineProfit` — peļņa šai pozīcijai
 
-Katras pozīcijas rindas beigās jābūt redzamiem:
+### 7.5. Perioda pārslēgšana (globāla)
 
-- `lineProfit` (peļņa šai pozīcijai)
+Sistēmā ir viens globāls perioda pārslēdzējs ar diviem režīmiem:
 
-### 7.6. Darba kopējo rādītāju attēlošana
+- **Mēneša skats** — navigācija pa mēnešiem ar `‹` / `›` bultiņām
+- **Nedēļas skats** — navigācija pa darba nedēļām (pirmdiena–svētdiena)
 
-Darba detalizētā skata augšdaļā:
+Pārslēdzējs ir redzams gan `Darbi`, gan `Darbinieki` lapās. Navigācija starp lapām saglabā izvēlēto periodu URL parametros.
 
-- `izmaksas`
-- `ienākumi`
-- `peļņa`
+Pašreizējā perioda "nākamais" poga ir atspējota.
 
-### 7.7. Darba rediģēšana
+### 7.6. Kopsavilkuma rādītāji — Darbu lapa
 
-Lietotājs var rediģēt darba galveni un visas pozīcijas tieši tabulā.
+Virs darbu saraksta:
 
-### 7.8. Darba dzēšana
+- kopējie ienākumi
+- kopējās izmaksas (ieskaitot fiksētās par pagājušajām dienām)
+- kopējā peļņa
+- gaida apmaksu
 
-Ar apstiprinājuma darbību. Dzēšot darbu, tiek dzēstas arī tā pozīcijas.
+### 7.7. Kopsavilkuma rādītāji — Darbinieku lapa
+
+Virs darbinieku saraksta:
+
+- kopējās stundas periodā (visi darbinieki)
+- kopējās algas izmaksas periodā (visi darbinieki)
+
+Tabula rāda katru darbinieku ar:
+
+- nosaukumu
+- stundas likmi
+- stundām periodā
+- algas izmaksām periodā
+
+### 7.8. Darbinieku CRUD
+
+- Pievienot darbinieku (vārds + stundas likme)
+- Labot darbinieka vārdu un likmi (inline)
+- Dzēst darbinieku (darbi saglabājas, workerId kļūst null)
 
 ### 7.9. Meklēšana
 
@@ -349,50 +394,21 @@ Zem kopsavilkuma kartītēm atrodas meklēšanas lauks. Filtrē redzamos darbus 
 
 Meklēšana notiek klienta pusē — nav nepieciešams servera pieprasījums.
 
-### 7.10. Perioda pārslēgšana
-
-Darbu saraksta lapā lietotājs var izvēlēties divus skatīšanās režīmus:
-
-- **Mēneša skats** — navigācija pa mēnešiem ar `‹` / `›` bultiņām
-- **Nedēļas skats** — navigācija pa darba nedēļām (pirmdiena–svētdiena), darbojas arī ja nedēļa šķer mēnešu robežu
-
-Pašreizējā perioda "nākamais" poga ir atspējota.
-
-### 7.11. Kopsavilkuma rādītāji
-
-Virs darbu saraksta jāparāda:
-
-- kopējais darbu skaits
-- kopējie ieņēmumi
-- kopējās izmaksas
-- kopējā peļņa
-
-### 7.12. Iestatījumi
+### 7.10. Iestatījumi
 
 Iestatījumu lapā lietotājs var mainīt un saglabāt:
 
 - `laborRate` — pakalpojuma stundas likme
-- `employeeHourlyCost` — darbinieka stundas likme
-- `electricityCost` — elektroenerģija mēnesī
-- `rentCost` — īre mēnesī
-- `heatCost` — siltums mēnesī
-- `cleaningCost` — uzkopšana mēnesī
-- `clothingCost` — apģērbs mēnesī
+- `employeeHourlyCost` — noklusētā darbinieka stundas likme (izmantota ja darbam nav piesaistīts konkrēts darbinieks)
+- fiksētās mēneša izmaksas
 
-Mainot `laborRate` vai `employeeHourlyCost`, tas ietekmē tikai jaunās pozīcijas — esošās pozīcijas saglabā savas vērtības.
-
-### 7.13. PDF eksports
+### 7.11. PDF eksports
 
 Katra darba detalizētajā skatā ir poga `Lejupielādēt PDF`.
 
-PDF satur:
-- darba galveni (numurzīme, klients, datums)
-- tabulu ar kolonnām: nosaukums, pārdošanas cena, piezīmes, kopā
-- kopsummas rindu apakšā
+### 7.12. Datu saglabāšana
 
-### 7.14. Datu saglabāšana
-
-Visi darbi, pozīcijas un iestatījumi jāsaglabā persistenti datubāzē.
+Visi darbi, pozīcijas, darbinieki un iestatījumi jāsaglabā persistenti datubāzē.
 
 ## 8. UI/UX prasības
 
@@ -400,9 +416,9 @@ Visi darbi, pozīcijas un iestatījumi jāsaglabā persistenti datubāzē.
 
 Fiksēta kreisā sānu josla (sidebar), vienmēr redzama:
 
-- Servisa nosaukums / logo augšpusē
 - Navigācijas posteņi:
   - `Darbi` (darbu saraksts)
+  - `Darbinieki` (darbinieku pārskats un CRUD)
   - `Iestatījumi`
 - Izrakstīšanās poga apakšpusē
 
@@ -410,26 +426,10 @@ Fiksēta kreisā sānu josla (sidebar), vienmēr redzama:
 
 - Lappušu pārejas animācijas (fade-in/slide-in)
 - Ielādes ekrāns ar animētu indikatoru
-- Modālo logu animācijas (parādīšanās/aizvēršanās)
-- Darbu saraksta rindu animācijas (stagger)
+- Modālo logu animācijas
 - Pozīciju rindu pievienošanas/dzēšanas animācijas
-- Metrika karšu ielādes animācijas
 
-### 8.3. Kompakts pozīciju saraksts
-
-- Pozīciju rindas minimāla augstuma (ne lielākas par vajadzīgo)
-- Skaitliskie lauki šauri (maks. 80-90px plati)
-- Nosaukuma lauks plats (aizpilda pieejamo vietu)
-- Rindas vizuāli atdalītas, bet bez lieka padding
-- Hover efekts uz rindas
-
-### 8.4. Ielādes stāvokļi
-
-- Skeleton animācija datu ielādes laikā
-- Pogu ielādes stāvoklis (spinner) pēc iesniegšanas
-- Optimistiskā UI (pozīcija tiek pievienota momentāni)
-
-### 8.5. Krāsu shēma
+### 8.3. Krāsu shēma
 
 - Fons: #f3f4f6
 - Virsma: #ffffff
@@ -439,9 +439,9 @@ Fiksēta kreisā sānu josla (sidebar), vienmēr redzama:
 - Zaudējums: #b91c1c / #fee2e2
 - Akcents: #2563eb (zils)
 
-### 8.6. Responsivitāte
+### 8.4. Responsivitāte
 
-Primāri desktop lietojums. Planšetē josla var sašaurināties līdz ikonām.
+Primāri desktop lietojums. Mobilajā versijā redzama apakšā fiksēta navigācija.
 
 ## 9. Validācijas prasības
 
@@ -453,14 +453,10 @@ Primāri desktop lietojums. Planšetē josla var sašaurināties līdz ikonām.
 ### 9.2. Obligātie lauki pozīcijas līmenī
 
 - `partName`
-- `quantity`
-- `partPurchasePrice`
-- `partSalePrice`
-- `laborHours`
 
-### 9.3. Skaitliskie lauki
+### 9.3. Obligātie lauki darbinieka līmenī
 
-Tikai derīgas skaitliskas vērtības (nav negatīvas vērtības tur, kur nav loģiski).
+- `name`
 
 ## 10. Autentifikācija
 
@@ -478,10 +474,6 @@ Tikai derīgas skaitliskas vērtības (nav negatīvas vērtības tur, kur nav lo
 - Sesija glabājas `httpOnly` cookie
 - Paroles tiek hashētas ar `bcrypt`
 
-### 10.3. Lietotāju pārvaldība
-
-MVP versijā lietotāji tiek pievienoti tieši datubāzē. Nav nepieciešams admin UI.
-
 ## 11. PDF eksports
 
 ### 11.1. Formāts
@@ -492,18 +484,11 @@ MVP versijā lietotāji tiek pievienoti tieši datubāzē. Nav nepieciešams adm
 
 ### 11.2. Saturs
 
-**Galvene:**
-- Numurzīme
-- Klienta vārds
-- Datums
+**Galvene:** Numurzīme, klienta vārds, datums
 
-**Tabula:**
-| Nosaukums | Pārdošanas cena | Piezīmes | Kopā |
-|-----------|----------------|---------|------|
-| ...       | ...            | ...     | ...  |
+**Tabula:** Nosaukums | Pārdošanas cena | Piezīmes | Kopā
 
-**Apakša:**
-- Kopsumma: `totalRevenue`
+**Apakša:** Kopsumma (`totalRevenue`)
 
 ## 12. Tehniskās prasības
 
@@ -513,15 +498,16 @@ MVP versijā lietotāji tiek pievienoti tieši datubāzē. Nav nepieciešams adm
 - Backend: Next.js Server Actions
 - Database: PostgreSQL
 - ORM: Prisma
-- Auth: sessijas ar JWT vai `iron-session`
+- Auth: sessijas ar JWT
 - Animācijas: Framer Motion
-- PDF: `@react-pdf/renderer` vai `jsPDF`
-- Styling: Custom CSS vai Tailwind
+- PDF: jsPDF
+- Styling: Custom CSS
 
 ### 12.2. Datubāzes tabulas
 
 - `users`
 - `settings`
+- `workers`
 - `jobs`
 - `job_items`
 
@@ -529,47 +515,35 @@ MVP versijā lietotāji tiek pievienoti tieši datubāzē. Nav nepieciešams adm
 
 Visi aprēķini centralizēti serverī. `laborRate` un `employeeHourlyCost` glabājas katrā pozīcijā atsevišķi vēsturiskās precizitātes dēļ.
 
-## 13. MVP robežas
+### 12.4. Globālais periods
 
-Šīs funkcijas nav obligātas:
+Periods (mode/month/week) tiek pārnests starp lapām caur URL parametriem. Navigācijas josla saglabā aktīvos parametrus, pārvietojoties starp lapām.
 
-- Detaļu cenu automātiska ielasīšana
-- Klientu kartītes
-- Auto vēsture
-- Noliktavas uzskaite
-- Darbinieku atsevišķa uzskaite
-- Grāmatvedības integrācijas
-- Multi-user permission sistēma ar lomām
-- Darba statusu plūsma
-
-## 14. Akcepta kritēriji
+## 13. Akcepta kritēriji
 
 MVP tiek uzskatīts par gatavu, ja:
 
 1. Neautentificēts lietotājs tiek novirzīts uz `/login`
 2. Pēc pieteikšanās lietotājs redz darbu sarakstu
-3. Lietotājs var pievienot jaunu darbu
+3. Lietotājs var pievienot jaunu darbu (ar vai bez darbinieka)
 4. Lietotājs var pievienot 10–30 pozīcijas vienam darbam ātri un ērti
-5. Pozīcijas ir kompaktas — aizņem maz vietas
-6. Visi aprēķini (pozīcija un darba līmenī) ir pareizi
-7. Iestatījumu lapā var mainīt likmes un fiksētās izmaksas
-8. Jaunu pozīciju pievienošana izmanto aktuālās iestatījumu likmes
-9. Esošās pozīcijas saglabā savas vēsturiskās likmes
-10. PDF eksports darbojas un satur pareizos datus
-11. Framer Motion animācijas darbojas nevainojami
-12. Ielādes ekrāns redzams datu ielādes laikā
-13. Kreisā sānu josla vienmēr redzama ar Darbi un Iestatījumi posteņiem
-14. Meklēšana un filtrēšana darbojas
+5. Visi aprēķini (pozīcija, darba un perioda līmenī) ir pareizi
+6. Fiksētās izmaksas tiek aprēķinātas tikai par pagājušajām darba dienām
+7. Perioda pārslēgšana darbojas gan uz `Darbi`, gan `Darbinieki` lapas
+8. Periods saglabājas navigējot starp lapām
+9. Darbinieku lapa rāda stundas un algas izmaksas izvēlētajā periodā
+10. Darbinieku CRUD darbojas
+11. Darbinieka izvēle modālajā logā un darba galvenē darbojas
+12. PDF eksports darbojas
+13. Meklēšana un filtrēšana darbojas
 
-## 15. Potenciālie attīstības virzieni
+## 14. Potenciālie attīstības virzieni
 
 1. Detaļu cenu lookup
 2. Klientu datubāze
 3. Auto vēsture
 4. Servisa darbu statusi
-5. Darbinieku piesaiste pozīcijām
-6. Paplašinātas atskaites (peļņa pa mēnešiem, klientiem, detaļu tipiem)
-7. Excel / CSV eksports
-8. Importēšana no Excel
-9. Multi-user ar lomām (admins, meistars, vadītājs)
-10. Fiksēto izmaksu automātiska sadale pa darbiem
+5. Paplašinātas atskaites (peļņa pa mēnešiem, klientiem, darbiniekiem)
+6. Excel / CSV eksports
+7. Multi-user ar lomām (admins, meistars, vadītājs)
+8. Fiksēto izmaksu automātiska sadale pa darbiem

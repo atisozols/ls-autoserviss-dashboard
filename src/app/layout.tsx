@@ -7,7 +7,7 @@ import { Sidebar } from "@/components/sidebar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Autoserviss",
+  title: "LS Autoserviss",
   description: "Autoservisa darbu un peļņas uzskaite.",
 };
 

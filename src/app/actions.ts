@@ -88,6 +88,48 @@ export async function updateSettingsAction(formData: FormData) {
   revalidatePath("/settings");
 }
 
+// ─── Workers ──────────────────────────────────────────────────────────────────
+
+export async function createWorkerAction(formData: FormData) {
+  const name = getString(formData, "name");
+  if (!name) throw new Error("Name is required.");
+
+  await prisma.worker.create({
+    data: {
+      name,
+      hourlyRate: getDecimal(formData, "hourlyRate", 8),
+    },
+  });
+
+  revalidatePath("/workers");
+}
+
+export async function updateWorkerAction(formData: FormData) {
+  const id = getString(formData, "id");
+  const name = getString(formData, "name");
+  if (!id || !name) throw new Error("Id and name are required.");
+
+  await prisma.worker.update({
+    where: { id },
+    data: {
+      name,
+      hourlyRate: getDecimal(formData, "hourlyRate", 8),
+    },
+  });
+
+  revalidatePath("/workers");
+}
+
+export async function deleteWorkerAction(formData: FormData) {
+  const id = getString(formData, "id");
+  if (!id) throw new Error("Id is required.");
+
+  await prisma.worker.delete({ where: { id } });
+
+  revalidatePath("/workers");
+  revalidatePath("/");
+}
+
 // ─── Jobs ─────────────────────────────────────────────────────────────────────
 
 export async function createJobAction(formData: FormData) {
@@ -95,6 +137,7 @@ export async function createJobAction(formData: FormData) {
   const plateNumber = getString(formData, "plateNumber").toUpperCase();
   const clientName = getString(formData, "clientName");
   const clientPhone = getString(formData, "clientPhone");
+  const workerId = getString(formData, "workerId") || null;
 
   if (!date || !plateNumber) {
     throw new Error("Date and plate number are required.");
@@ -106,6 +149,7 @@ export async function createJobAction(formData: FormData) {
       plateNumber,
       clientName: clientName || null,
       clientPhone: clientPhone || null,
+      workerId,
     },
   });
 
@@ -132,6 +176,7 @@ export async function updateJobAction(formData: FormData) {
       vehicleNote: getString(formData, "vehicleNote") || null,
       additionalExpenses: getDecimal(formData, "additionalExpenses"),
       notes: getString(formData, "notes") || null,
+      workerId: getString(formData, "workerId") || null,
     },
   });
 

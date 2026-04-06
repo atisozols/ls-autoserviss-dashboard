@@ -5,11 +5,14 @@ import { useState } from "react";
 
 import { createJobAction } from "@/app/actions";
 
+type Worker = { id: string; name: string };
+
 type NewJobModalProps = {
   defaultDate: string;
+  workers: Worker[];
 };
 
-export function NewJobModal({ defaultDate }: NewJobModalProps) {
+export function NewJobModal({ defaultDate, workers }: NewJobModalProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -80,6 +83,20 @@ export function NewJobModal({ defaultDate }: NewJobModalProps) {
                   <span>Tel. numurs</span>
                   <input name="clientPhone" placeholder="+371 20000000" type="tel" />
                 </label>
+
+                {workers.length > 0 && (
+                  <label className="field field-full">
+                    <span>Darbinieks</span>
+                    <select name="workerId">
+                      <option value="">— nav norādīts —</option>
+                      {workers.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
 
                 <div className="modal-actions">
                   <button

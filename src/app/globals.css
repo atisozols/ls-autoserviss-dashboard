@@ -556,6 +556,16 @@ select:focus {
   min-width: 130px;
 }
 
+.col-computed {
+  width: 82px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: right;
+  white-space: nowrap;
+  padding-left: 0.4rem !important;
+  padding-right: 0.4rem !important;
+}
+
 .col-profit {
   width: 92px;
   font-weight: 600;
@@ -823,10 +833,118 @@ select:focus {
   50% { opacity: 0.4; }
 }
 
-/* ─── 4-column stats grid ────────────────────────────────────────── */
+/* ─── Stats grid variants ────────────────────────────────────────── */
 
 .stats-grid-4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stats-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* ─── Workers page ───────────────────────────────────────────────── */
+
+.workers-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.workers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.worker-row,
+.worker-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.worker-row-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.worker-row-rate {
+  color: var(--muted);
+  font-size: 0.88rem;
+  min-width: 70px;
+  text-align: right;
+}
+
+.worker-row-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.worker-name-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.worker-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.worker-rate-field {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.worker-rate-input {
+  width: 72px;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+  text-align: right;
+  background: #fff;
+}
+
+.worker-rate-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.worker-rate-unit {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.worker-add-form {
+  border-top: 1px solid var(--surface-border);
+  padding-top: 1rem;
+}
+
+.worker-add-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.82rem;
 }
 
 /* ─── Period switcher ────────────────────────────────────────────── */
@@ -1311,11 +1429,16 @@ select:focus {
 
 @media (max-width: 420px) {
   .stats-grid,
+  .stats-grid-2,
   .stats-grid-4 {
     grid-template-columns: 1fr;
   }
 
   .payment-status-row {
     grid-template-columns: 1fr;
+  }
+
+  .worker-add-row {
+    flex-wrap: wrap;
   }
 }
