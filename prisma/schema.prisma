@@ -27,12 +27,12 @@ model Settings {
 }
 
 model Worker {
-  id         String   @id @default(cuid())
-  name       String
-  hourlyRate Decimal  @default(8) @db.Decimal(10, 2)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  jobs       Job[]
+  id           String   @id @default(cuid())
+  name         String
+  monthlyRate  Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  jobs         Job[]
 
   @@index([name])
 }

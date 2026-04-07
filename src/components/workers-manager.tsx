@@ -7,9 +7,9 @@ import { createWorkerAction, deleteWorkerAction, updateWorkerAction } from "@/ap
 export type WorkerRow = {
   id: string;
   name: string;
-  hourlyRate: number;
+  monthlyRate: number;
   periodHours: number;
-  periodPay: number;
+  periodPay: number; // informational: hours × 8 €/h
 };
 
 type Props = {
@@ -25,7 +25,7 @@ export function WorkersManager({ workers, periodLabel }: Props) {
   function startEdit(w: WorkerRow) {
     setEditingId(w.id);
     setEditName(w.name);
-    setEditRate(String(w.hourlyRate));
+    setEditRate(String(w.monthlyRate));
   }
 
   function cancelEdit() {
@@ -37,14 +37,14 @@ export function WorkersManager({ workers, periodLabel }: Props) {
       {/* Period stats */}
       <section className="panel">
         <div className="panel-heading">
-          <h2>Stundas un algas — {periodLabel}</h2>
+          <h2>Stundas — {periodLabel}</h2>
           <span className="pill">{workers.length} darbinieki</span>
         </div>
 
         {workers.length === 0 ? (
           <div className="empty-state">
             <h3>Nav pievienotu darbinieku</h3>
-            <p>Pievieno darbiniekus zemāk, lai sekotu to stundām un izmaksām.</p>
+            <p>Pievieno darbiniekus zemāk, lai sekotu to stundām.</p>
           </div>
         ) : (
           <div className="table-wrap">
@@ -52,17 +52,17 @@ export function WorkersManager({ workers, periodLabel }: Props) {
               <thead>
                 <tr>
                   <th>Darbinieks</th>
-                  <th>Likme (€/h)</th>
+                  <th>Mēnešalga</th>
                   <th>Stundas periodā</th>
-                  <th>Izmaksas periodā</th>
+                  <th>Indikatīvā stundas maksa (8 €/h)</th>
                 </tr>
               </thead>
               <tbody>
                 {workers.map((w) => (
                   <tr key={w.id}>
                     <td><strong>{w.name}</strong></td>
-                    <td>{w.hourlyRate.toFixed(2)} €/h</td>
-                    <td>{w.periodHours > 0 ? w.periodHours.toFixed(2) : "—"}</td>
+                    <td>{w.monthlyRate > 0 ? `${w.monthlyRate.toFixed(2)} €/mēn` : "—"}</td>
+                    <td>{w.periodHours > 0 ? `${w.periodHours.toFixed(2)} h` : "—"}</td>
                     <td>{w.periodPay > 0 ? `${w.periodPay.toFixed(2)} €` : "—"}</td>
                   </tr>
                 ))}
@@ -103,13 +103,13 @@ export function WorkersManager({ workers, periodLabel }: Props) {
                   <input
                     className="worker-rate-input"
                     min="0"
-                    name="hourlyRate"
+                    name="monthlyRate"
                     onChange={(e) => setEditRate(e.target.value)}
                     step="0.01"
                     type="number"
                     value={editRate}
                   />
-                  <span className="worker-rate-unit">€/h</span>
+                  <span className="worker-rate-unit">€/mēn</span>
                 </div>
                 <div className="worker-row-actions">
                   <button className="btn btn-secondary btn-sm" type="submit">Saglabāt</button>
@@ -119,7 +119,9 @@ export function WorkersManager({ workers, periodLabel }: Props) {
             ) : (
               <div className="worker-row" key={w.id}>
                 <span className="worker-row-name">{w.name}</span>
-                <span className="worker-row-rate">{w.hourlyRate.toFixed(2)} €/h</span>
+                <span className="worker-row-rate">
+                  {w.monthlyRate > 0 ? `${w.monthlyRate.toFixed(2)} €/mēn` : "—"}
+                </span>
                 <div className="worker-row-actions">
                   <button
                     className="btn btn-secondary btn-sm"
@@ -160,13 +162,13 @@ export function WorkersManager({ workers, periodLabel }: Props) {
             <div className="worker-rate-field">
               <input
                 className="worker-rate-input"
-                defaultValue="8"
+                defaultValue="0"
                 min="0"
-                name="hourlyRate"
+                name="monthlyRate"
                 step="0.01"
                 type="number"
               />
-              <span className="worker-rate-unit">€/h</span>
+              <span className="worker-rate-unit">€/mēn</span>
             </div>
             <button className="btn btn-primary btn-sm" type="submit">Pievienot +</button>
           </div>

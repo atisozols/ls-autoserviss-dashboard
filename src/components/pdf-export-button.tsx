@@ -44,7 +44,7 @@ export function PdfExportButton({ job, items, totalRevenue }: PdfExportButtonPro
 <html lang="lv">
 <head>
   <meta charset="UTF-8">
-  <title>Darba karte — ${job.plateNumber}</title>
+  <title>LS Autoserviss — ${job.plateNumber}</title>
   <style>
     @media print { @page { margin: 14mm 14mm 14mm 14mm; size: A4; } }
     * { box-sizing: border-box; }
@@ -55,8 +55,9 @@ export function PdfExportButton({ job, items, totalRevenue }: PdfExportButtonPro
       margin: 0;
       padding: 24px;
     }
-    h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: -0.02em; }
-    .meta { color: #4b5563; font-size: 11.5px; line-height: 1.7; margin-bottom: 20px; }
+    h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -0.02em; }
+    .company-phone { color: #4b5563; font-size: 12px; margin: 0 0 16px; }
+    .meta { color: #4b5563; font-size: 11.5px; line-height: 1.7; margin-bottom: 20px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
     .meta strong { color: #111827; }
     table { width: 100%; border-collapse: collapse; margin-top: 4px; }
     thead th {
@@ -87,7 +88,8 @@ export function PdfExportButton({ job, items, totalRevenue }: PdfExportButtonPro
   </style>
 </head>
 <body>
-  <h1>Darba karte</h1>
+  <h1>LS Autoserviss</h1>
+  <p class="company-phone">+371 26 231 114</p>
   <div class="meta">
     <div>Numurzīme: <strong>${job.plateNumber}</strong></div>
     ${job.clientName ? `<div>Klients: <strong>${job.clientName}</strong></div>` : ""}

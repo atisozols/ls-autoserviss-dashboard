@@ -33,29 +33,27 @@ export default async function JobDetailPage({ params }: JobPageProps) {
       include: { items: { orderBy: { rowOrder: "asc" } } },
     }),
     prisma.settings.findUnique({ where: { id: 1 } }),
-    prisma.worker.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, hourlyRate: true } }),
+    prisma.worker.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, monthlyRate: true } }),
   ]);
 
   if (!job) notFound();
 
   const totals = calculateJobTotals(job);
   const s = settings ?? defaultSettings;
-  // If a worker is assigned, their hourlyRate overrides the global default for new items
-  const workerForJob = job.workerId ? workers.find((w) => w.id === job.workerId) : null;
-  const defaultEmployeeHourlyCost = workerForJob
-    ? Number(workerForJob.hourlyRate)
-    : Number(s.employeeHourlyCost);
+  const defaultEmployeeHourlyCost = Number(s.employeeHourlyCost);
   const amountPaid = Number(job.amountPaid ?? 0);
   const awaitingPayment = Math.max(0, Math.round((totals.totalRevenue - amountPaid) * 100) / 100);
 
-  // Per-job overhead allocation
-  const totalMonthlyFixed = settings
+  // Per-job overhead: settings fixed costs + all workers' monthly salaries
+  const settingsFixed = settings
     ? Number(settings.electricityCost) +
       Number(settings.rentCost) +
       Number(settings.heatCost) +
       Number(settings.cleaningCost) +
       Number(settings.clothingCost)
     : 0;
+  const workersFixed = workers.reduce((sum, w) => sum + Number(w.monthlyRate), 0);
+  const totalMonthlyFixed = settingsFixed + workersFixed;
 
   const jobDateKey = job.date.toISOString().slice(0, 10);
 
@@ -158,18 +156,21 @@ export default async function JobDetailPage({ params }: JobPageProps) {
         </div>
       </div>
 
-      <section className="stats-grid stats-grid-4">
+      <section className={`stats-grid ${jobOverhead > 0 ? "stats-grid-5" : "stats-grid-4"}`}>
         <article className="metric-card">
           <span>Ienākumi</span>
           <strong>{formatCurrency(totals.totalRevenue)}</strong>
         </article>
         <article className="metric-card">
           <span>Izmaksas</span>
-          <strong>{formatCurrency(adjustedCost)}</strong>
-          {jobOverhead > 0 && (
-            <small className="metric-note">t.sk. {formatCurrency(jobOverhead)} fiksētās</small>
-          )}
+          <strong>{formatCurrency(totals.totalCost)}</strong>
         </article>
+        {jobOverhead > 0 && (
+          <article className="metric-card">
+            <span>Fiksētās izmaksas</span>
+            <strong>{formatCurrency(jobOverhead)}</strong>
+          </article>
+        )}
         <article className={`metric-card ${adjustedProfit >= 0 ? "profit-good" : "profit-bad"}`}>
           <span>Peļņa</span>
           <strong>{formatCurrency(adjustedProfit)}</strong>

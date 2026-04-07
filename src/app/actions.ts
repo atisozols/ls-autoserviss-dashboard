@@ -97,7 +97,7 @@ export async function createWorkerAction(formData: FormData) {
   await prisma.worker.create({
     data: {
       name,
-      hourlyRate: getDecimal(formData, "hourlyRate", 8),
+      monthlyRate: getDecimal(formData, "monthlyRate", 8),
     },
   });
 
@@ -113,7 +113,7 @@ export async function updateWorkerAction(formData: FormData) {
     where: { id },
     data: {
       name,
-      hourlyRate: getDecimal(formData, "hourlyRate", 8),
+      monthlyRate: getDecimal(formData, "monthlyRate", 8),
     },
   });
 

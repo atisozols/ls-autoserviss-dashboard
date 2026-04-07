@@ -11,6 +11,7 @@ export type JobRow = {
   clientPhone: string | null;
   positionCount: number;
   totalCost: string; // pre-formatted currency
+  overhead: string | null; // pre-formatted fixed cost per job, null if no fixed costs
   totalRevenue: string;
   profit: string;
   profitGood: boolean;
@@ -78,6 +79,7 @@ export function JobsSearch({ jobs }: Props) {
                 <th>Klients</th>
                 <th>Poz.</th>
                 <th>Izmaksas</th>
+                <th>Fiksētās</th>
                 <th>Ienākumi</th>
                 <th>Peļņa</th>
                 <th>Gaida</th>
@@ -102,6 +104,7 @@ export function JobsSearch({ jobs }: Props) {
                   </td>
                   <td>{job.positionCount}</td>
                   <td>{job.totalCost}</td>
+                  <td className="muted-cell">{job.overhead ?? "—"}</td>
                   <td>{job.totalRevenue}</td>
                   <td className={job.profitGood ? "profit-good" : "profit-bad"}>{job.profit}</td>
                   <td className={job.awaitingPayment ? "awaiting-cell" : "paid-cell"}>

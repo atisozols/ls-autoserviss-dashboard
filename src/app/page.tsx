@@ -73,17 +73,19 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     prisma.settings.findUnique({ where: { id: 1 } }),
     prisma.worker.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
+      select: { id: true, name: true, monthlyRate: true },
+    }).then((ws) => ws.map((w) => ({ id: w.id, name: w.name, monthlyRate: Number(w.monthlyRate) }))),
   ]);
 
-  const totalMonthlyFixed = settings
+  const settingsFixed = settings
     ? Number(settings.electricityCost) +
       Number(settings.rentCost) +
       Number(settings.heatCost) +
       Number(settings.cleaningCost) +
       Number(settings.clothingCost)
     : 0;
+  const workersFixed = workers.reduce((s, w) => s + Number(w.monthlyRate), 0);
+  const totalMonthlyFixed = settingsFixed + workersFixed;
 
   const { effectiveCost: periodFixedCost, businessDaysElapsed } =
     calculatePeriodFixedCosts(totalMonthlyFixed, startDate, endDate, todayUTC);
@@ -115,20 +117,46 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     0,
   );
 
-  const jobRows = jobsWithTotals.map((j) => ({
-    id: j.id,
-    date: formatDate(j.date),
-    plateNumber: j.plateNumber,
-    clientName: j.clientName,
-    clientPhone: j.clientPhone,
-    positionCount: j.totals.positionCount,
-    totalCost: formatCurrency(j.totals.totalCost),
-    totalRevenue: formatCurrency(j.totals.totalRevenue),
-    profit: formatCurrency(j.totals.profit),
-    profitGood: j.totals.profit >= 0,
-    awaitingPayment:
-      j.awaitingPayment > 0 ? formatCurrency(j.awaitingPayment) : null,
-  }));
+  // Group jobs by date key to compute per-job overhead
+  const jobsByDate = new Map<string, number>();
+  for (const j of jobsWithTotals) {
+    const key = j.date.toISOString().slice(0, 10);
+    jobsByDate.set(key, (jobsByDate.get(key) ?? 0) + 1);
+  }
+
+  // Cache daily fixed cost per date key
+  const dailyFixedCache = new Map<string, number>();
+  for (const [key, count] of jobsByDate.entries()) {
+    const dayStart = new Date(`${key}T00:00:00.000Z`);
+    const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+    const { effectiveCost } = calculatePeriodFixedCosts(
+      totalMonthlyFixed,
+      dayStart,
+      dayEnd,
+      todayUTC,
+    );
+    dailyFixedCache.set(key, totalMonthlyFixed > 0 ? Math.round((effectiveCost / Math.max(count, 1)) * 100) / 100 : 0);
+  }
+
+  const jobRows = jobsWithTotals.map((j) => {
+    const key = j.date.toISOString().slice(0, 10);
+    const overhead = dailyFixedCache.get(key) ?? 0;
+    return {
+      id: j.id,
+      date: formatDate(j.date),
+      plateNumber: j.plateNumber,
+      clientName: j.clientName,
+      clientPhone: j.clientPhone,
+      positionCount: j.totals.positionCount,
+      totalCost: formatCurrency(j.totals.totalCost),
+      overhead: overhead > 0 ? formatCurrency(overhead) : null,
+      totalRevenue: formatCurrency(j.totals.totalRevenue),
+      profit: formatCurrency(j.totals.profit),
+      profitGood: j.totals.profit >= 0,
+      awaitingPayment:
+        j.awaitingPayment > 0 ? formatCurrency(j.awaitingPayment) : null,
+    };
+  });
 
   return (
     <div className="shell">

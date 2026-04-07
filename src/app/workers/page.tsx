@@ -84,27 +84,27 @@ export default async function WorkersPage({ searchParams }: WorkersPageProps) {
     }),
   ]);
 
-  // Aggregate hours and pay per worker for the period
-  const stats = new Map<string, { hours: number; pay: number }>();
+  // Aggregate hours per worker for the period (pay is informational at 8 €/h)
+  const DISPLAY_HOURLY_RATE = 8;
+  const stats = new Map<string, { hours: number }>();
   for (const job of jobsInPeriod) {
     if (!job.workerId) continue;
-    const s = stats.get(job.workerId) ?? { hours: 0, pay: 0 };
+    const s = stats.get(job.workerId) ?? { hours: 0 };
     for (const item of job.items) {
-      const h = Number(item.laborHours);
-      s.hours += h;
-      s.pay += h * Number(item.employeeHourlyCost);
+      s.hours += Number(item.laborHours);
     }
     stats.set(job.workerId, s);
   }
 
   const workerRows = workers.map((w) => {
-    const s = stats.get(w.id) ?? { hours: 0, pay: 0 };
+    const s = stats.get(w.id) ?? { hours: 0 };
+    const hours = Math.round(s.hours * 100) / 100;
     return {
       id: w.id,
       name: w.name,
-      hourlyRate: Number(w.hourlyRate),
-      periodHours: Math.round(s.hours * 100) / 100,
-      periodPay: Math.round(s.pay * 100) / 100,
+      monthlyRate: Number(w.monthlyRate),
+      periodHours: hours,
+      periodPay: Math.round(hours * DISPLAY_HOURLY_RATE * 100) / 100,
     };
   });
 
