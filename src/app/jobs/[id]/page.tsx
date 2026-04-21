@@ -54,6 +54,7 @@ export default async function JobDetailPage({ params }: JobPageProps) {
     : 0;
   const workersFixed = workers.reduce((sum, w) => sum + Number(w.monthlyRate), 0);
   const totalMonthlyFixed = settingsFixed + workersFixed;
+  const monthStartDay = Number(settings?.monthStartDay ?? 10);
 
   const jobDateKey = job.date.toISOString().slice(0, 10);
 
@@ -79,6 +80,7 @@ export default async function JobDetailPage({ params }: JobPageProps) {
     jobDayStart,
     jobDayEnd,
     todayUTC,
+    monthStartDay,
   );
 
   const jobOverhead =

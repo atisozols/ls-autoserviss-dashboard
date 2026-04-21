@@ -19,6 +19,14 @@ function getDecimal(formData: FormData, key: string, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function getIntInRange(formData: FormData, key: string, fallback: number, min: number, max: number) {
+  const raw = getString(formData, key);
+  if (!raw) return fallback;
+  const parsed = parseInt(raw, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, parsed));
+}
+
 function parseDateInput(value: string) {
   return new Date(`${value}T12:00:00.000Z`);
 }
@@ -73,6 +81,7 @@ export async function updateSettingsAction(formData: FormData) {
       heatCost: getDecimal(formData, "heatCost"),
       cleaningCost: getDecimal(formData, "cleaningCost"),
       clothingCost: getDecimal(formData, "clothingCost"),
+      monthStartDay: getIntInRange(formData, "monthStartDay", 10, 1, 28),
     },
     update: {
       laborRate: getDecimal(formData, "laborRate", 35),
@@ -82,10 +91,13 @@ export async function updateSettingsAction(formData: FormData) {
       heatCost: getDecimal(formData, "heatCost"),
       cleaningCost: getDecimal(formData, "cleaningCost"),
       clothingCost: getDecimal(formData, "clothingCost"),
+      monthStartDay: getIntInRange(formData, "monthStartDay", 10, 1, 28),
     },
   });
 
   revalidatePath("/settings");
+  revalidatePath("/");
+  revalidatePath("/workers");
 }
 
 // ─── Workers ──────────────────────────────────────────────────────────────────

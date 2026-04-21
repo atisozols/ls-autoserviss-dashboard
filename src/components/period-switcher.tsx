@@ -2,11 +2,12 @@
 
 import { usePathname, useRouter } from "next/navigation";
 
-import { getCurrentMonthStr, getCurrentWeekStart } from "@/lib/calculations";
+import { getCurrentMonthStr, getCurrentWeekStart, getMonthBounds } from "@/lib/calculations";
 
 type Props = {
   mode: "monthly" | "weekly";
   value: string; // "YYYY-MM" for monthly, "YYYY-MM-DD" (Monday) for weekly
+  monthStartDay: number;
 };
 
 function addWeeks(weekStart: string, delta: number): string {
@@ -33,7 +34,22 @@ function formatWeekLabel(weekStart: string): string {
   return `${fmt(monday)} – ${fmt(friday)} ${friday.getUTCFullYear()}`;
 }
 
-export function PeriodSwitcher({ mode, value }: Props) {
+function formatMonthLabel(monthKey: string, startDay: number): string {
+  const { startDate, endDate } = getMonthBounds(monthKey, startDay);
+  if (startDay === 1) {
+    return startDate.toLocaleDateString("lv-LV", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  }
+  const last = new Date(endDate.getTime() - 86_400_000);
+  const fmt = (date: Date) =>
+    date.toLocaleDateString("lv-LV", { day: "numeric", month: "short", timeZone: "UTC" });
+  return `${fmt(startDate)} – ${fmt(last)} ${last.getUTCFullYear()}`;
+}
+
+export function PeriodSwitcher({ mode, value, monthStartDay }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -43,7 +59,7 @@ export function PeriodSwitcher({ mode, value }: Props) {
 
   function switchMode(newMode: "monthly" | "weekly") {
     if (newMode === "monthly") {
-      nav(`mode=monthly&month=${getCurrentMonthStr()}`);
+      nav(`mode=monthly&month=${getCurrentMonthStr(monthStartDay)}`);
     } else {
       nav(`mode=weekly&week=${getCurrentWeekStart()}`);
     }
@@ -61,17 +77,10 @@ export function PeriodSwitcher({ mode, value }: Props) {
   }
 
   const isAtLimit =
-    (mode === "monthly" && value === getCurrentMonthStr()) ||
+    (mode === "monthly" && value === getCurrentMonthStr(monthStartDay)) ||
     (mode === "weekly" && value === getCurrentWeekStart());
 
-  const monthLabel =
-    mode === "monthly"
-      ? new Date(
-          parseInt(value.split("-")[0]),
-          parseInt(value.split("-")[1]) - 1,
-          1,
-        ).toLocaleDateString("lv-LV", { month: "long", year: "numeric" })
-      : "";
+  const monthLabel = mode === "monthly" ? formatMonthLabel(value, monthStartDay) : "";
 
   return (
     <div className="period-switcher">

@@ -23,6 +23,7 @@ model Settings {
   heatCost            Decimal  @default(0) @db.Decimal(10, 2)
   cleaningCost        Decimal  @default(0) @db.Decimal(10, 2)
   clothingCost        Decimal  @default(0) @db.Decimal(10, 2)
+  monthStartDay       Int      @default(10)
   updatedAt           DateTime @updatedAt
 }
 

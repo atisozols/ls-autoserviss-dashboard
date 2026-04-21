@@ -4,6 +4,7 @@ import {
   formatCurrency,
   getCurrentMonthStr,
   getCurrentWeekStart,
+  getMonthBounds,
 } from "@/lib/calculations";
 import { prisma } from "@/lib/prisma";
 
@@ -38,9 +39,19 @@ function formatWeekLabel(weekStart: string): string {
   return `${fmt(monday)} – ${fmt(friday)} ${friday.getUTCFullYear()}`;
 }
 
+function formatMonthRangeLabel(startDate: Date, endDate: Date): string {
+  const last = new Date(endDate.getTime() - 86_400_000);
+  const fmt = (date: Date) =>
+    date.toLocaleDateString("lv-LV", { day: "numeric", month: "short", timeZone: "UTC" });
+  return `${fmt(startDate)} – ${fmt(last)} ${last.getUTCFullYear()}`;
+}
+
 export default async function WorkersPage({ searchParams }: WorkersPageProps) {
   const params = await searchParams;
   const mode: "monthly" | "weekly" = params.mode === "weekly" ? "weekly" : "monthly";
+
+  const settings = await prisma.settings.findUnique({ where: { id: 1 } });
+  const monthStartDay = Number(settings?.monthStartDay ?? 10);
 
   let startDate: Date;
   let endDate: Date;
@@ -55,19 +66,13 @@ export default async function WorkersPage({ searchParams }: WorkersPageProps) {
     periodValue = `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, "0")}-${String(startDate.getUTCDate()).padStart(2, "0")}`;
     periodLabel = formatWeekLabel(periodValue);
   } else {
-    periodValue = params.month ?? getCurrentMonthStr();
-    const [yearStr, monStr] = periodValue.split("-");
-    const year = parseInt(yearStr, 10);
-    const mon = parseInt(monStr, 10);
-    startDate = new Date(Date.UTC(year, mon - 1, 1));
-    endDate = new Date(Date.UTC(year, mon, 1));
-    periodLabel = new Date(year, mon - 1, 1).toLocaleDateString("lv-LV", {
-      month: "long",
-      year: "numeric",
-    });
+    periodValue = params.month ?? getCurrentMonthStr(monthStartDay);
+    const bounds = getMonthBounds(periodValue, monthStartDay);
+    startDate = bounds.startDate;
+    endDate = bounds.endDate;
+    periodLabel = formatMonthRangeLabel(startDate, endDate);
   }
 
-  // Fetch all workers + jobs with items in the period
   const [workers, jobsInPeriod] = await Promise.all([
     prisma.worker.findMany({ orderBy: { name: "asc" } }),
     prisma.job.findMany({
@@ -117,7 +122,7 @@ export default async function WorkersPage({ searchParams }: WorkersPageProps) {
       <div className="page-header">
         <h1>Darbinieki</h1>
         <div className="page-header-right">
-          <PeriodSwitcher mode={mode} value={periodValue} />
+          <PeriodSwitcher mode={mode} monthStartDay={monthStartDay} value={periodValue} />
         </div>
       </div>
 

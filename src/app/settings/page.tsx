@@ -11,6 +11,7 @@ const defaultSettings = {
   heatCost: 0,
   cleaningCost: 0,
   clothingCost: 0,
+  monthStartDay: 10,
 };
 
 export default async function SettingsPage() {
@@ -57,12 +58,27 @@ export default async function SettingsPage() {
                   type="number"
                 />
               </label>
+              <label className="field">
+                <span>Mēneša sākuma diena</span>
+                <input
+                  defaultValue={Number(s.monthStartDay ?? 10)}
+                  max="28"
+                  min="1"
+                  name="monthStartDay"
+                  required
+                  step="1"
+                  type="number"
+                />
+              </label>
               <input
                 name="employeeHourlyCost"
                 type="hidden"
                 value={Number(s.employeeHourlyCost)}
               />
             </div>
+            <p className="settings-hint">
+              Mēneša skats sāksies ar šo datumu (piem. 10 → 10. datums – nākamā mēneša 9. datums).
+            </p>
           </section>
 
           <section className="panel">

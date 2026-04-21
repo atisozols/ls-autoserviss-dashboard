@@ -47,10 +47,49 @@ export function toInputDate(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
-/** Returns the current month as "YYYY-MM" */
-export function getCurrentMonthStr(): string {
+/**
+ * Returns the current accounting month key as "YYYY-MM".
+ * Accounting month YYYY-MM starts on YYYY-MM-{startDay} and ends on
+ * (YYYY-MM+1)-{startDay-1} inclusive. If today's day < startDay, the
+ * current accounting month is the previous calendar month.
+ */
+export function getCurrentMonthStr(startDay = 1): string {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  let year = now.getFullYear();
+  let mon = now.getMonth(); // 0-indexed
+  if (now.getDate() < startDay) {
+    mon -= 1;
+    if (mon < 0) {
+      mon = 11;
+      year -= 1;
+    }
+  }
+  return `${year}-${String(mon + 1).padStart(2, "0")}`;
+}
+
+/**
+ * Returns the UTC start (inclusive) and end (exclusive) of the accounting month.
+ * Month key "YYYY-MM" with startDay=10 → window [YYYY-MM-10, (YYYY-MM+1)-10).
+ */
+export function getMonthBounds(monthKey: string, startDay = 1): { startDate: Date; endDate: Date } {
+  const [y, m] = monthKey.split("-").map(Number);
+  const startDate = new Date(Date.UTC(y, m - 1, startDay));
+  const endDate = new Date(Date.UTC(y, m, startDay));
+  return { startDate, endDate };
+}
+
+/** Given a date, returns the accounting month key "YYYY-MM" it belongs to. */
+export function getAccountingMonthKey(date: Date, startDay = 1): string {
+  let year = date.getUTCFullYear();
+  let mon = date.getUTCMonth();
+  if (date.getUTCDate() < startDay) {
+    mon -= 1;
+    if (mon < 0) {
+      mon = 11;
+      year -= 1;
+    }
+  }
+  return `${year}-${String(mon + 1).padStart(2, "0")}`;
 }
 
 /** Returns the Monday of the current week as "YYYY-MM-DD" */
@@ -63,7 +102,7 @@ export function getCurrentWeekStart(): string {
   return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
 }
 
-/** Count Mon–Fri days in a given month (year=full year, month=0-indexed) */
+/** Count Mon–Fri days in a given calendar month (year=full year, month=0-indexed) */
 export function getBusinessDaysInMonth(year: number, month: number): number {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   let count = 0;
@@ -74,20 +113,39 @@ export function getBusinessDaysInMonth(year: number, month: number): number {
   return count;
 }
 
+/** Count Mon–Fri days inside the accounting-month window for the given key. */
+export function getBusinessDaysInAccountingMonth(monthKey: string, startDay = 1): number {
+  const { startDate, endDate } = getMonthBounds(monthKey, startDay);
+  let count = 0;
+  const d = new Date(startDate);
+  while (d < endDate) {
+    const dow = d.getUTCDay();
+    if (dow !== 0 && dow !== 6) count++;
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return count;
+}
+
 /**
  * Calculate effective fixed costs for a period, counting only business days up to today.
  * For past periods all days are counted. For current/future periods only elapsed days count.
+ *
+ * Daily rate is computed per accounting month: `totalMonthlyFixed / businessDaysInAccountingMonth`.
+ * This way the month-start-day setting is honoured — a period that straddles two accounting
+ * months uses the correct divisor for each day.
  *
  * @param totalMonthlyFixed  Monthly fixed cost (same every month from settings)
  * @param startDate          Period start (UTC, inclusive)
  * @param endDate            Period end (UTC, exclusive)
  * @param todayUTC           Today at UTC midnight
+ * @param monthStartDay      Day of month the accounting period starts on (1-28)
  */
 export function calculatePeriodFixedCosts(
   totalMonthlyFixed: number,
   startDate: Date,
   endDate: Date,
   todayUTC: Date,
+  monthStartDay = 1,
 ): { effectiveCost: number; businessDaysElapsed: number; totalBusinessDays: number } {
   if (totalMonthlyFixed <= 0) {
     return { effectiveCost: 0, businessDaysElapsed: 0, totalBusinessDays: 0 };
@@ -97,15 +155,23 @@ export function calculatePeriodFixedCosts(
   let businessDaysElapsed = 0;
   let totalBusinessDays = 0;
 
+  const bDaysCache = new Map<string, number>();
   const d = new Date(startDate);
   while (d < endDate) {
     const dow = d.getUTCDay();
     if (dow !== 0 && dow !== 6) {
       totalBusinessDays++;
       if (d <= todayUTC) {
-        const bDaysInMonth = getBusinessDaysInMonth(d.getUTCFullYear(), d.getUTCMonth());
-        effectiveCost += totalMonthlyFixed / bDaysInMonth;
-        businessDaysElapsed++;
+        const key = getAccountingMonthKey(d, monthStartDay);
+        let bDays = bDaysCache.get(key);
+        if (bDays === undefined) {
+          bDays = getBusinessDaysInAccountingMonth(key, monthStartDay);
+          bDaysCache.set(key, bDays);
+        }
+        if (bDays > 0) {
+          effectiveCost += totalMonthlyFixed / bDays;
+          businessDaysElapsed++;
+        }
       }
     }
     d.setUTCDate(d.getUTCDate() + 1);

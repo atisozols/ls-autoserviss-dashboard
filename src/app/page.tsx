@@ -7,6 +7,7 @@ import {
   formatDate,
   getCurrentMonthStr,
   getCurrentWeekStart,
+  getMonthBounds,
   calculatePeriodFixedCosts,
   toInputDate,
 } from "@/lib/calculations";
@@ -44,6 +45,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
   );
 
+  const settings = await prisma.settings.findUnique({ where: { id: 1 } });
+  const monthStartDay = Number(settings?.monthStartDay ?? 10);
+
   let startDate: Date;
   let endDate: Date;
   let periodValue: string; // "YYYY-MM" or "YYYY-MM-DD"
@@ -56,21 +60,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     // Normalise periodValue to the actual Monday
     periodValue = `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, "0")}-${String(startDate.getUTCDate()).padStart(2, "0")}`;
   } else {
-    periodValue = params.month ?? getCurrentMonthStr();
-    const [yearStr, monStr] = periodValue.split("-");
-    const year = parseInt(yearStr, 10);
-    const mon = parseInt(monStr, 10);
-    startDate = new Date(Date.UTC(year, mon - 1, 1));
-    endDate = new Date(Date.UTC(year, mon, 1));
+    periodValue = params.month ?? getCurrentMonthStr(monthStartDay);
+    const bounds = getMonthBounds(periodValue, monthStartDay);
+    startDate = bounds.startDate;
+    endDate = bounds.endDate;
   }
 
-  const [jobs, settings, workers] = await Promise.all([
+  const [jobs, workers] = await Promise.all([
     prisma.job.findMany({
       where: { date: { gte: startDate, lt: endDate } },
       include: { items: { orderBy: { rowOrder: "asc" } } },
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     }),
-    prisma.settings.findUnique({ where: { id: 1 } }),
     prisma.worker.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, monthlyRate: true },
@@ -88,7 +89,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const totalMonthlyFixed = settingsFixed + workersFixed;
 
   const { effectiveCost: periodFixedCost, businessDaysElapsed } =
-    calculatePeriodFixedCosts(totalMonthlyFixed, startDate, endDate, todayUTC);
+    calculatePeriodFixedCosts(totalMonthlyFixed, startDate, endDate, todayUTC, monthStartDay);
 
   const jobsWithTotals = jobs.map((job) => {
     const totals = calculateJobTotals(job);
@@ -134,6 +135,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       dayStart,
       dayEnd,
       todayUTC,
+      monthStartDay,
     );
     dailyFixedCache.set(key, totalMonthlyFixed > 0 ? Math.round((effectiveCost / Math.max(count, 1)) * 100) / 100 : 0);
   }
@@ -163,7 +165,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <div className="page-header">
         <h1>Darbi</h1>
         <div className="page-header-right">
-          <PeriodSwitcher mode={mode} value={periodValue} />
+          <PeriodSwitcher mode={mode} monthStartDay={monthStartDay} value={periodValue} />
           <NewJobModal
             defaultDate={toInputDate(new Date())}
             workers={workers}
